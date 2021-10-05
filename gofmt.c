@@ -73,7 +73,7 @@ go_fmt(void)
     buff_path_for_fmt();
     snprintf(cmd_buff, sizeof(cmd_buff), "gofmt -w %s", bufferLoc);
 
-    yed_run_subproc(cmd_buff, &output_len, &status);
+    yed_cprint("%s", yed_run_subproc(cmd_buff, &output_len, &status));
 
     if (status != 0)
     {
@@ -113,7 +113,26 @@ ev_buffer_go_fmt(yed_event* event)
 void
 buffer_go_fmt()
 {
-    go_fmt();
-    YEXE("buffer-reload");
-    yed_cprint("Buffer reloaded");
+    yed_frame* frame;
+
+    if (!ys->active_frame)
+    {
+        yed_cerr("no active frame");
+        return;
+    }
+
+    frame = ys->active_frame;
+
+    if (!frame->buffer)
+    {
+        yed_cerr("active frame has no buffer");
+        return;
+    }
+
+    if (frame->buffer->ft == yed_get_ft("Golang"))
+    {
+        go_fmt();
+        YEXE("buffer-reload");
+        yed_cprint("Buffer reloaded");
+    }
 }
