@@ -71,7 +71,7 @@ _go_fmt(void)
     char       cmd_buff[1024];
 
     buff_path_for_fmt();
-    snprintf(cmd_buff, sizeof(cmd_buff), "gofmt -w %s &> /tmp/golog && echo\"ran successfulyy \" > /tmp/golog", bufferLoc);
+    snprintf(cmd_buff, sizeof(cmd_buff), "gofmt -w %s &> /tmp/golog", bufferLoc);
     yed_run_subproc(cmd_buff, &output_len, &status);
 
     if (status != 0)
