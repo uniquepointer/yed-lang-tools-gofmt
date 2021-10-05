@@ -1,11 +1,9 @@
 #include <yed/plugin.h>
 
 void
-buffer_go_fmt();
+buffer_go_fmt(void);
 void
 ev_buffer_go_fmt(yed_event* event);
-void
-ev_reload_go(yed_event* event);
 
 char bufferLoc[512];
 
@@ -15,23 +13,20 @@ yed_plugin_boot(yed_plugin* self)
     /*Check for plug version*/
     YED_PLUG_VERSION_CHECK();
 
-    yed_event_handler gofmt;
-    yed_event_handler reload;
+    yed_event_handler goFmt;
+    yed_event_handler buffReload;
 
-    gofmt.kind = EVENT_BUFFER_PRE_WRITE;
-    gofmt.fn   = ev_buffer_go_fmt;
-    reload.kind = EVENT_BUFFER_POST_WRITE;
-    reload.fn   = ev_reload_go;
+    goFmt.kind = EVENT_BUFFER_POST_WRITE;
+    goFmt.fn   = ev_buffer_go_fmt;
 
-    if (yed_get_var("gofmt-auto") == NULL)
+    if (yed_get_var("go-fmt-auto") == NULL)
     {
-        yed_set_var("gofmt-auto", "yes");
+        yed_set_var("go-fmt-auto", "yes");
     }
 
-    if (yed_var_is_truthy("gofmt-auto"))
+    if (yed_var_is_truthy("go-fmt-auto"))
     {
-        yed_plugin_add_event_handler(self, gofmt);
-        yed_plugin_add_event_handler(self, reload);
+        yed_plugin_add_event_handler(self, goFmt);
     }
 
     yed_plugin_set_command(self, "go-fmt", buffer_go_fmt);
@@ -71,12 +66,9 @@ buff_path_for_fmt()
 }
 
 int
-status;
-
-void
 go_fmt(void)
 {
-    int        output_len;
+    int        output_len, status;
     char       cmd_buff[1024];
 
     buff_path_for_fmt();
@@ -88,10 +80,12 @@ go_fmt(void)
     if (status != 0)
     {
         yed_cerr("Failure to format golang\n");
+        return status;
     }
     else
     {
         yed_cprint("Formatted buffer\n");
+        return 0;
     }
 }
 void
@@ -115,7 +109,11 @@ ev_buffer_go_fmt(yed_event* event)
 
     if (frame->buffer->ft == yed_get_ft("Golang"))
     {
-        go_fmt();
+        if(go_fmt() == 0)
+        {
+            YEXE("buffer-reload");
+            yed_cprint("Reloaded buffer\n");
+        }
     }
 }
 void
@@ -139,32 +137,10 @@ buffer_go_fmt()
 
     if (frame->buffer->ft == yed_get_ft("Golang"))
     {
-        go_fmt();
-    }
-}
-
-void
-ev_reload_go(yed_event* event)
-{
-    yed_frame* frame;
-
-    if (!ys->active_frame)
-    {
-        yed_cerr("no active frame");
-        return;
-    }
-
-    frame = ys->active_frame;
-
-    if (!frame->buffer)
-    {
-        yed_cerr("active frame has no buffer");
-        return;
-    }
-
-    if (frame->buffer->ft == yed_get_ft("Golang") && status == 0)
-    {
-        YEXE("buffer-reload");
-        yed_cprint("Reloaded buffer\n");
+        if(go_fmt() == 0)
+        {
+            YEXE("buffer-reload");
+            yed_cprint("Reloaded buffer\n");
+        }
     }
 }
