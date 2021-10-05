@@ -64,24 +64,27 @@ buff_path_for_fmt()
     }
 }
 
-void
+int
 go_fmt(void)
 {
     int        output_len, status;
     char       cmd_buff[1024];
 
     buff_path_for_fmt();
-    snprintf(cmd_buff, sizeof(cmd_buff), "gofmt -w %s", bufferLoc);
-
+    snprintf(cmd_buff, sizeof(cmd_buff), "gofmt -w %s &> /tmp/golog", bufferLoc);
+    LOG_CMD_ENTER("gofmt");
     yed_cprint("%s", yed_run_subproc(cmd_buff, &output_len, &status));
+    LOG_EXIT();
 
     if (status != 0)
     {
         yed_cerr("Failure to format golang\n");
+        return status;
     }
     else
     {
         yed_cprint("Formatted buffer\n");
+        return 0;
     }
 }
 void
@@ -105,9 +108,11 @@ ev_buffer_go_fmt(yed_event* event)
 
     if (frame->buffer->ft == yed_get_ft("Golang"))
     {
-        go_fmt();
-        YEXE("buffer-reload");
-        yed_cprint("Buffer reloaded");
+        if (go_fmt() == 0)
+        {
+            YEXE("buffer-reload");
+            yed_cprint("Buffer reloaded");
+        }
     }
 }
 void
@@ -131,8 +136,10 @@ buffer_go_fmt()
 
     if (frame->buffer->ft == yed_get_ft("Golang"))
     {
-        go_fmt();
-        YEXE("buffer-reload");
-        yed_cprint("Buffer reloaded");
+        if (go_fmt() == 0)
+        {
+            YEXE("buffer-reload");
+            yed_cprint("Buffer reloaded");
+        }
     }
 }
